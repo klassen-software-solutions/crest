@@ -1,6 +1,8 @@
 .DS_Store
 /.build
 /.swiftpm
+/crest
 /Packages
 /*.xcodeproj
+Package.resolved
 xcuserdata/
