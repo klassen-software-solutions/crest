@@ -1,18 +1,22 @@
 import ArgumentParser
 import AsyncHTTPClient
 import Foundation
+import NIOHTTP1
 
 struct Crest: ParsableCommand {
     static var configuration = CommandConfiguration(
         abstract: "A utility for communicating with REST-ish services."
     )
 
+    @Option(name: .shortAndLong, help: "The HTTP method (defaults to GET)")
+    var method: HTTPMethod = .GET
+
     @Argument(help: "The URL of the service to contact.")
     var url: String
 
     mutating func run() throws {
         let url = try parseURL()
-        let op = Operation(url: url)
+        let op = Operation(url: url, method: method)
         try op.perform()
     }
 
@@ -52,3 +56,6 @@ private enum ParameterError: Error, LocalizedError {
         }
     }
 }
+
+
+extension HTTPMethod: ExpressibleByArgument {}

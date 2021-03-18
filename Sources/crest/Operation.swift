@@ -13,6 +13,7 @@ import NIOHTTP1
 
 struct Operation {
     let url: URL
+    let method: HTTPMethod
 
     func perform() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
@@ -21,7 +22,7 @@ struct Operation {
         }
 
         let delegate = ResponseDelegate()
-        let request = try HTTPClient.Request(url: url.absoluteString, method: .GET)
+        let request = try HTTPClient.Request(url: url.absoluteString, method: method)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
