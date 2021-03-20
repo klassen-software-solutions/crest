@@ -22,11 +22,19 @@ struct Operation {
         }
 
         let delegate = ResponseDelegate()
-        let request = try HTTPClient.Request(url: url.absoluteString, method: method)
+        var request = try HTTPClient.Request(url: url.absoluteString, method: method)
+        addHeadersToRequest(&request)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
         }
+    }
+
+    private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
+        let platform = Platform()
+        request.headers.add(name: "Host", value: "\(request.host):\(request.port)")
+        request.headers.add(name: "User-Agent", value: "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))")
+        request.headers.add(name: "Accept", value: "*/*")
     }
 }
 
