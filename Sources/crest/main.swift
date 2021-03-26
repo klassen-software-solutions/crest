@@ -3,10 +3,12 @@ import AsyncHTTPClient
 import Foundation
 import NIOHTTP1
 
+import CrestLib
+
 struct Crest: ParsableCommand {
     static var configuration = CommandConfiguration(
         abstract: "A utility for communicating with REST-ish services.",
-        version: VERSION
+        version: CrestLib.VERSION
     )
 
     @Option(name: .shortAndLong, help: "The HTTP method (defaults to GET)")

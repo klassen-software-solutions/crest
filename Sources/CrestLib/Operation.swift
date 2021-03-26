@@ -11,11 +11,16 @@ import NIO
 import NIOHTTP1
 
 
-struct Operation {
-    let url: URL
-    let method: HTTPMethod
+public struct Operation {
+    public let url: URL
+    public let method: HTTPMethod
 
-    func perform() throws {
+    public init(url: URL, method: HTTPMethod) {
+        self.url = url
+        self.method = method
+    }
+
+    public func perform() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
         defer {
             try? httpClient.syncShutdown()
@@ -24,6 +29,7 @@ struct Operation {
         let delegate = ResponseDelegate()
         var request = try HTTPClient.Request(url: url.absoluteString, method: method)
         addHeadersToRequest(&request)
+        try addContentToRequest(&request)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
@@ -35,6 +41,51 @@ struct Operation {
         request.headers.add(name: "Host", value: "\(request.host):\(request.port)")
         request.headers.add(name: "User-Agent", value: "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))")
         request.headers.add(name: "Accept", value: "*/*")
+    }
+
+    // This "ugliness" is needed for the streaming requests since we need the stream
+    // reader to outlive the `addContentToRequest` method.
+    private let wrapper = Wrapper<InputStreamReader>()
+
+    private func nextChunk(_ writer: HTTPClient.Body.StreamWriter) -> EventLoopFuture<Void> {
+        if let data = try? wrapper.object?.nextDataBlock() {
+            return writer.write(.byteBuffer(ByteBuffer(data: data))).flatMap {
+                nextChunk(writer)
+            }
+        }
+        wrapper.object?.close()
+        wrapper.object = nil
+        return writer.write(.byteBuffer(ByteBuffer()))
+    }
+
+    private func addContentToRequest(_ request: inout HTTPClient.Request) throws {
+        if let inputStream = InputStream(fileAtPath: "/dev/stdin") {
+            var reader = try InputStreamReader(inputStream)
+            guard !reader.empty else { return }
+            if reader.largeStream {
+                wrapper.object = reader
+                let body: HTTPClient.Body = .stream { writer in
+                    nextChunk(writer)
+                }
+                request.body = body
+            } else {
+                defer { reader.close() }
+                if let data = try reader.nextDataBlock() {
+                    if let s = String.init(data: data, encoding: .utf8) {
+                        var contentType = "text/plain"
+                        if (try? JSONSerialization.jsonObject(with: data)) != nil {
+                            contentType = "application/json"
+                        } else if (try? XMLDocument(data: data)) != nil {
+                            contentType = "application/xml"
+                        }
+                        request.headers.add(name: "Content-Type", value: contentType)
+                        request.body = .string(s)
+                        return
+                    }
+                    request.body = .data(data)
+                }
+            }
+        }
     }
 }
 

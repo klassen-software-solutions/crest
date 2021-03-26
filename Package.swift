@@ -5,7 +5,12 @@ import PackageDescription
 
 let package = Package(
     name: "crest",
+    products: [
+        .executable(name: "crest", targets: ["crest"]),
+        .library(name: "CrestLib", targets: ["CrestLib"])
+    ],
     dependencies: [
+        .package(url: "https://github.com/klassen-software-solutions/KSSCore.git", from: "5.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.4.0"),
         .package(url: "https://github.com/swift-server/async-http-client", from: "1.2.4")
     ],
@@ -13,11 +18,17 @@ let package = Package(
         .target(
             name: "crest",
             dependencies: [
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "CrestLib",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
+        .target(
+            name: "CrestLib",
+            dependencies: [
                 .product(name: "AsyncHTTPClient", package: "async-http-client")
             ]),
         .testTarget(
             name: "crestTests",
-            dependencies: ["crest"]),
+            dependencies: ["crest", .product(name: "KSSTest", package: "KSSCore")]
+            ),
     ]
 )
