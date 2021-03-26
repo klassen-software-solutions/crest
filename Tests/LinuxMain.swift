@@ -3,5 +3,6 @@ import XCTest
 import crestTests
 
 var tests = [XCTestCaseEntry]()
-tests += crestTests.allTests()
+tests += crestTests.__allTests()
+
 XCTMain(tests)

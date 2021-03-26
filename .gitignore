@@ -5,4 +5,7 @@
 /Packages
 /*.xcodeproj
 Package.resolved
+REVISION
 xcuserdata/
+Sources/CrestLib/version.swift
+
