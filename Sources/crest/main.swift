@@ -18,6 +18,8 @@ struct Crest: ParsableCommand {
     var url: String
 
     mutating func run() throws {
+        Configuration.setup(withFilename: ".crestconfig.json",
+                            andCommandLineOverloads: commandLineOverrides())
         let url = try parseURL()
         let op = Operation(url: url, method: method)
         try op.perform()
@@ -27,13 +29,15 @@ struct Crest: ParsableCommand {
         guard let url = URL(string: self.url) else {
             throw ParameterError.invalidURL(self.url)
         }
-        guard let scheme = url.scheme else {
-            throw ParameterError.missingSchemeInURL(self.url)
-        }
-        guard scheme == "http" || scheme == "https" else {
-            throw ParameterError.unsupportedScheme(scheme)
+        guard url.scheme == nil || url.scheme == "http" || url.scheme == "https" else {
+            throw ParameterError.unsupportedScheme(url.scheme!)
         }
         return url
+    }
+
+    func commandLineOverrides() -> [String: Any?] {
+        var overrides = [String: Any?]()
+        return overrides
     }
 }
 
@@ -43,7 +47,6 @@ Crest.main()
 
 private enum ParameterError: Error, LocalizedError {
     case invalidURL(String)
-    case missingSchemeInURL(String)
     case unsupportedScheme(String)
 
     var errorDescription: String? { "\(String(describing: type(of: self))).\(self): \(desc)" }
@@ -52,8 +55,6 @@ private enum ParameterError: Error, LocalizedError {
         switch self {
         case .invalidURL(let url):
             return "'\(url)' is not a parsable URL"
-        case .missingSchemeInURL(let url):
-            return "'\(url)' does not include a scheme"
         case .unsupportedScheme(let scheme):
             return "\(scheme)' is not a supported scheme"
         }

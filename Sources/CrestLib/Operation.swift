@@ -27,13 +27,23 @@ public struct Operation {
         }
 
         let delegate = ResponseDelegate()
-        var request = try HTTPClient.Request(url: url.absoluteString, method: method)
+
+        var request = try HTTPClient.Request(url: urlAsString(), method: method)
         addHeadersToRequest(&request)
         try addContentToRequest(&request)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
         }
+    }
+
+    private func urlAsString() -> String {
+        if url.scheme == nil {
+            if let prefix = Configuration.shared.URLPrefix {
+                return prefix + url.absoluteString
+            }
+        }
+        return url.absoluteString
     }
 
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
