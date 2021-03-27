@@ -10,7 +10,10 @@ import Foundation
 
 
 public struct Configuration {
-    var URLPrefix: String? = nil
+    var autoPopulateRequestHeaders: Bool? = nil
+    var autoRecognizeRequestContent: Bool? = nil
+    var isPrivate: Bool? = nil
+    var urlPrefix: String? = nil
 
     static var shared = Configuration()
 
@@ -20,7 +23,10 @@ public struct Configuration {
         manager.load(file: filename, relativeFrom: .customPath(homeDirectory))
             .load(file: filename, relativeFrom: .pwd)
             .load(overloads)
-        shared.URLPrefix = manager["URLPrefix"] as? String
+        shared.autoPopulateRequestHeaders = manager["AutoPopulateRequestHeaders"] as? Bool
+        shared.autoRecognizeRequestContent = manager["AutoRecognizeRequestContent"] as? Bool
+        shared.isPrivate = manager["Private"] as? Bool
+        shared.urlPrefix = manager["URLPrefix"] as? String
 
         print("!! config: \(shared)")
     }

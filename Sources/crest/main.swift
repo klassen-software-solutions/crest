@@ -11,8 +11,11 @@ struct Crest: ParsableCommand {
         version: CrestLib.VERSION
     )
 
-    @Option(name: .shortAndLong, help: "The HTTP method (defaults to GET)")
+    @Option(name: .shortAndLong, help: "The HTTP method (defaults to GET).")
     var method: HTTPMethod = .GET
+
+    @Flag(help: "Turn off the auto-population of headers.")
+    var noAutoHeaders = false
 
     @Argument(help: "The URL of the service to contact.")
     var url: String
@@ -37,6 +40,10 @@ struct Crest: ParsableCommand {
 
     func commandLineOverrides() -> [String: Any?] {
         var overrides = [String: Any?]()
+        if noAutoHeaders {
+            overrides["AutoPopulateRequestHeaders"] = false
+            overrides["AutoRecognizeRequestContent"] = false
+        }
         return overrides
     }
 }

@@ -39,7 +39,7 @@ public struct Operation {
 
     private func urlAsString() -> String {
         if url.scheme == nil {
-            if let prefix = Configuration.shared.URLPrefix {
+            if let prefix = Configuration.shared.urlPrefix {
                 return prefix + url.absoluteString
             }
         }
@@ -47,10 +47,19 @@ public struct Operation {
     }
 
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
-        let platform = Platform()
         request.headers.add(name: "Host", value: "\(request.host):\(request.port)")
-        request.headers.add(name: "User-Agent", value: "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))")
-        request.headers.add(name: "Accept", value: "*/*")
+        if Configuration.shared.autoPopulateRequestHeaders ?? true {
+            request.headers.add(name: "User-Agent", value: getUserAgent())
+            request.headers.add(name: "Accept", value: "*/*")
+        }
+    }
+
+    private func getUserAgent() -> String {
+        if Configuration.shared.isPrivate ?? false {
+            return "Crest"
+        }
+        let platform = Platform()
+        return "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))"
     }
 
     // This "ugliness" is needed for the streaming requests since we need the stream
@@ -88,7 +97,9 @@ public struct Operation {
                         } else if (try? XMLDocument(data: data)) != nil {
                             contentType = "application/xml"
                         }
-                        request.headers.add(name: "Content-Type", value: contentType)
+                        if Configuration.shared.autoRecognizeRequestContent ?? true {
+                            request.headers.add(name: "Content-Type", value: contentType)
+                        }
                         request.body = .string(s)
                         return
                     }
