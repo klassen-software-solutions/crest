@@ -27,20 +27,44 @@ public struct Operation {
         }
 
         let delegate = ResponseDelegate()
-        var request = try HTTPClient.Request(url: url.absoluteString, method: method)
-        addHeadersToRequest(&request)
+
+        var request = try HTTPClient.Request(url: urlAsString(), method: method)
         try addContentToRequest(&request)
+        addHeadersToRequest(&request)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
         }
     }
 
+    private func urlAsString() -> String {
+        if url.scheme == nil {
+            if let prefix = Configuration.shared.urlPrefix {
+                return prefix + url.absoluteString
+            }
+        }
+        return url.absoluteString
+    }
+
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
+        request.headers.add(name: "host", value: "\(request.host):\(request.port)")
+        if Configuration.shared.autoPopulateRequestHeaders ?? true {
+            request.headers.add(name: "user-agent", value: getUserAgent())
+            request.headers.add(name: "accept", value: "*/*")
+        }
+        if let headers = Configuration.shared.requestHeaders {
+            for header in headers {
+                request.headers.replaceOrAdd(name: header.key, value: header.value)
+            }
+        }
+    }
+
+    private func getUserAgent() -> String {
+        if Configuration.shared.isPrivate ?? false {
+            return "Crest"
+        }
         let platform = Platform()
-        request.headers.add(name: "Host", value: "\(request.host):\(request.port)")
-        request.headers.add(name: "User-Agent", value: "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))")
-        request.headers.add(name: "Accept", value: "*/*")
+        return "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))"
     }
 
     // This "ugliness" is needed for the streaming requests since we need the stream
@@ -78,7 +102,9 @@ public struct Operation {
                         } else if (try? XMLDocument(data: data)) != nil {
                             contentType = "application/xml"
                         }
-                        request.headers.add(name: "Content-Type", value: contentType)
+                        if Configuration.shared.autoRecognizeRequestContent ?? true {
+                            request.headers.add(name: "Content-Type", value: contentType)
+                        }
                         request.body = .string(s)
                         return
                     }

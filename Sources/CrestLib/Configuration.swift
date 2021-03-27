@@ -1,0 +1,78 @@
+//
+//  Configuration.swift
+//  
+//
+//  Created by Steven W. Klassen on 2021-03-25.
+//
+
+import Configuration
+import Foundation
+
+
+public struct Configuration {
+    var autoPopulateRequestHeaders: Bool? = nil
+    var autoRecognizeRequestContent: Bool? = nil
+    var isPrivate: Bool? = nil
+    var requestHeaders: [String: String]? = nil
+    var urlPrefix: String? = nil
+
+    static var shared = Configuration()
+
+    public static func setup(withFilename filename: String, andCommandLineOverloads overloads: Any) {
+        let manager = ConfigurationManager()
+        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.path
+        manager.load(file: filename, relativeFrom: .customPath(homeDirectory))
+            .load(file: filename, relativeFrom: .pwd)
+            .load(overloads)
+
+        shared.autoPopulateRequestHeaders = manager["AutoPopulateRequestHeaders"] as? Bool
+        shared.autoRecognizeRequestContent = manager["AutoRecognizeRequestContent"] as? Bool
+        shared.isPrivate = manager["Private"] as? Bool
+        shared.urlPrefix = manager["URLPrefix"] as? String
+
+        // Loading maps adds to the map rather than overridding it. Hence to
+        // implement --no-auto-headers, we had to use an "extra" manager key
+        // to force them to be ignored.
+        let blankRequestHeaders = manager["_BlankRequestHeaders"] as? Bool ?? false
+        if !blankRequestHeaders {
+            shared.requestHeaders = manager["RequestHeaders"] as? [String: String]
+        }
+        if let commandLineHeaders = manager["_RequestHeaders"] as? [String: String] {
+            overrideRequestHeaders(commandLineHeaders)
+        }
+        print("!! config: \(shared)")
+    }
+
+    static func overrideRequestHeaders(_ headers: [String: String]) {
+        guard headers.count > 0 else {
+            return
+        }
+        if shared.requestHeaders == nil {
+            shared.requestHeaders = [String: String]()
+        }
+        for header in headers {
+            shared.requestHeaders![caseInsensitive: header.key] = header.value
+        }
+    }
+}
+
+// TODO: should this be in KSSUtil?
+// Note: This is based on code found at
+// https://stackoverflow.com/questions/33182260/case-insensitive-dictionary-in-swift
+extension Dictionary where Key == String {
+    subscript(caseInsensitive key: Key) -> Value? {
+        get {
+            if let k = keys.first(where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
+                return self[k]
+            }
+            return nil
+        }
+        set {
+            if let k = keys.first(where: { $0.caseInsensitiveCompare(key) == .orderedSame }) {
+                self[k] = newValue
+            } else {
+                self[key] = newValue
+            }
+        }
+    }
+}
