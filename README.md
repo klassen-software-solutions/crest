@@ -32,7 +32,7 @@ for the HTTP protocol will be added.
 
 e.g. `"AutoPopulateRequestHeaders": false` (Default is `true`)
 
-This is also turn off if `--no-auto-headers` is specified on the command line.
+This is turned off if `--no-auto-headers` is specified on the command line.
 
 #### AutoRecognizeRequestContent
 
@@ -47,9 +47,9 @@ By default `crest` will attempt to identify the contents of the standard input a
  By turning this off no `Content-Type` header will be added automatically, and you will
  need to add it manually via the command line options.
  
- e.g. `"AutoRecognizeRequestContent": false` (Default is `true`)
+ E.g. `"AutoRecognizeRequestContent": false` (Default is `true`)
  
- This is also turn off if `--no-auto-headers` is specified on the command line.
+ This is turned off if `--no-auto-headers` is specified on the command line.
   
 #### Private
 
@@ -60,6 +60,25 @@ be reported as `Crest`. (You can override this as well by specifying your own `U
 either in the configuration files or via the command line.)
 
 E.g. `"Private": true` (Default is `false`)
+
+#### RequestHeaders
+
+This configuration items allows you to set a dictionary of request headers to be aded to each
+request. This is likely most useful for the local configuration file where you may have a
+common set of headers required by the web service you are developing.
+
+Any headers listed here will override any auto populated or auto recognized headers of the
+same name.
+
+Example:
+
+    "RequestHeaders": {
+        "My-Custom-Header": "some value",
+        "Content-Type": "text/html"
+    }
+    
+This is turned off if  `--no-auto-headers` is specified on the command line. In addition, any headers
+added via the command line will override any headers listed here of the same name.
 
 #### URLPrefix
 

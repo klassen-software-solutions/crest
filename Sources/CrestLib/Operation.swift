@@ -29,8 +29,8 @@ public struct Operation {
         let delegate = ResponseDelegate()
 
         var request = try HTTPClient.Request(url: urlAsString(), method: method)
-        addHeadersToRequest(&request)
         try addContentToRequest(&request)
+        addHeadersToRequest(&request)
         try httpClient.execute(request: request, delegate: delegate).futureResult.wait()
         if let error = delegate.error {
             throw error
@@ -47,10 +47,15 @@ public struct Operation {
     }
 
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
-        request.headers.add(name: "Host", value: "\(request.host):\(request.port)")
+        request.headers.add(name: "host", value: "\(request.host):\(request.port)")
         if Configuration.shared.autoPopulateRequestHeaders ?? true {
-            request.headers.add(name: "User-Agent", value: getUserAgent())
-            request.headers.add(name: "Accept", value: "*/*")
+            request.headers.add(name: "user-agent", value: getUserAgent())
+            request.headers.add(name: "accept", value: "*/*")
+        }
+        if let headers = Configuration.shared.requestHeaders {
+            for header in headers {
+                request.headers.replaceOrAdd(name: header.key, value: header.value)
+            }
         }
     }
 
