@@ -29,7 +29,8 @@ let package = Package(
             name: "CrestLib",
             dependencies: [
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
-                .product(name: "Configuration", package: "Configuration")
+                .product(name: "Configuration", package: "Configuration"),
+                .product(name: "KSSFoundation", package: "KSSCore")
             ]),
         .testTarget(
             name: "crestTests",

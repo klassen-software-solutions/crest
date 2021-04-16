@@ -7,6 +7,7 @@
 
 import AsyncHTTPClient
 import Foundation
+import KSSFoundation
 import NIO
 import NIOHTTP1
 
@@ -117,11 +118,18 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
     typealias Response = Void
 
     var error: Error? = nil
+    var prettyPrintIsPossible: Bool = false
 
     func didReceiveHead(task: HTTPClient.Task<Void>, _ head: HTTPResponseHead) -> EventLoopFuture<Void> {
         if head.status != .ok {
             error = OperationError.httpError(head.status)
         } else {
+            if Configuration.shared.prettyPrint {
+                let matches = head.headers["Content-Type"]
+                if matches.count == 1 && canPrettyPrintHeaderType(matches[0]) {
+                    prettyPrintIsPossible = true
+                }
+            }
             if Configuration.shared.showResponseHeaders {
                 print("Headers:")
                 print("  \(head.version) \(head.status.code) \(head.status)".uppercased())
@@ -150,17 +158,31 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
 
     func didReceiveBodyPart(task: HTTPClient.Task<Void>, _ buffer: ByteBuffer) -> EventLoopFuture<Void> {
         if let string = buffer.getString(at: buffer.readerIndex, length: buffer.readableBytes, encoding: .utf8) {
-            print(string)
+            if prettyPrintIsPossible {
+                print(string.prettyPrint(), terminator: "")
+            } else {
+                print(string, terminator: "")
+            }
         }
         return task.eventLoop.makeSucceededVoidFuture()
     }
 
     func didFinishRequest(task: HTTPClient.Task<Void>) throws -> Void {
-        // TODO: this is likely where the prettyprinter needs to happen
+        // If pretty print is requested, then we want to add a newline even if pretty
+        // printing isn't possible.
+        if Configuration.shared.prettyPrint {
+            print()
+        }
     }
 
     func didReceiveError(task: HTTPClient.Task<Void>, _ error: Error) {
         self.error = error
+    }
+
+    func canPrettyPrintHeaderType(_ contentType: String) -> Bool {
+        return contentType.starts(with: "application/xml")
+            || contentType.starts(with: "text/xml")
+            || contentType.starts(with: "application/json")
     }
 }
 

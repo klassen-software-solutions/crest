@@ -25,6 +25,9 @@ struct Crest: ParsableCommand {
     @Option(help: "Show or hide the response headers (true|false)")
     var showResponseHeaders: Bool?
 
+    @Option(help: "Turn the pretty printing on or off (true|false)")
+    var prettyPrint: Bool?
+
     @Flag(help: "Turn off the auto-population of headers.")
     var noAutoHeaders = false
 
@@ -61,6 +64,9 @@ struct Crest: ParsableCommand {
         }
         if let showResponseHeaders = self.showResponseHeaders {
             overrides["ShowResponseHeaders"] = showResponseHeaders
+        }
+        if let prettyPrint = self.prettyPrint {
+            overrides["PrettyPrint"] = prettyPrint
         }
         return overrides
     }

@@ -51,6 +51,25 @@ By default `crest` will attempt to identify the contents of the standard input a
  
  This is turned off if `--no-auto-headers` is specified on the command line.
   
+#### PrettyPrint
+
+Be default `crest` will pretty print content that it recognizes. This will currently include content
+of type `application/json` , `application/xml` or `text/xml`. In order for the pretty print to work the
+following must be true:
+
+- The `Content-Type` header must be specified and include a supported type,
+- The actual content must match the supported type, and
+- The actual content must come in one sections. That limits it to a size of 2048 bytes.
+
+Pretty printing will also ensure we end with a newline, so even non pretty-printable types
+will be more readable.
+
+You can turn off the pretty printing by specifying `--pretty-print=false` on the command
+line or setting `"PrettyPrint": false` in the configuration file.
+
+Note that if the content does not match the `Content-Type` header, the original content
+will still be printed.
+
 #### Private
 
 By default `crest` adds a `User-Agent` key that includes information about the machine you

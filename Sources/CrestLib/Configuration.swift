@@ -13,6 +13,7 @@ public struct Configuration {
     var autoPopulateRequestHeaders = true
     var autoRecognizeRequestContent = true
     var isPrivate = false
+    var prettyPrint = true
     var requestHeaders = [String: String]()
     var showResponseHeaders = false
     var urlPrefix: String? = nil
@@ -31,6 +32,9 @@ public struct Configuration {
         }
         if let value = manager["AutoRecognizeRequestContent"] as? Bool {
             shared.autoRecognizeRequestContent = value
+        }
+        if let value = manager["PrettyPrint"] as? Bool {
+            shared.prettyPrint = value
         }
         if let value = manager["Private"] as? Bool {
             shared.isPrivate = value
