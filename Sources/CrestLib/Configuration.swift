@@ -10,10 +10,11 @@ import Foundation
 
 
 public struct Configuration {
-    var autoPopulateRequestHeaders: Bool? = nil
-    var autoRecognizeRequestContent: Bool? = nil
-    var isPrivate: Bool? = nil
-    var requestHeaders: [String: String]? = nil
+    var autoPopulateRequestHeaders = true
+    var autoRecognizeRequestContent = true
+    var isPrivate = false
+    var requestHeaders = [String: String]()
+    var showResponseHeaders = false
     var urlPrefix: String? = nil
 
     static var shared = Configuration()
@@ -25,9 +26,18 @@ public struct Configuration {
             .load(file: filename, relativeFrom: .pwd)
             .load(overloads)
 
-        shared.autoPopulateRequestHeaders = manager["AutoPopulateRequestHeaders"] as? Bool
-        shared.autoRecognizeRequestContent = manager["AutoRecognizeRequestContent"] as? Bool
-        shared.isPrivate = manager["Private"] as? Bool
+        if let value = manager["AutoPopulateRequestHeaders"] as? Bool {
+            shared.autoPopulateRequestHeaders = value
+        }
+        if let value = manager["AutoRecognizeRequestContent"] as? Bool {
+            shared.autoRecognizeRequestContent = value
+        }
+        if let value = manager["Private"] as? Bool {
+            shared.isPrivate = value
+        }
+        if let value = manager["ShowResponseHeaders"] as? Bool {
+            shared.showResponseHeaders = value
+        }
         shared.urlPrefix = manager["URLPrefix"] as? String
 
         // Loading maps adds to the map rather than overridding it. Hence to
@@ -35,23 +45,14 @@ public struct Configuration {
         // to force them to be ignored.
         let blankRequestHeaders = manager["_BlankRequestHeaders"] as? Bool ?? false
         if !blankRequestHeaders {
-            shared.requestHeaders = manager["RequestHeaders"] as? [String: String]
+            if let value = manager["RequestHeaders"] as? [String: String] {
+                shared.requestHeaders = value
+            }
         }
         if let commandLineHeaders = manager["_RequestHeaders"] as? [String: String] {
-            overrideRequestHeaders(commandLineHeaders)
-        }
-        print("!! config: \(shared)")
-    }
-
-    static func overrideRequestHeaders(_ headers: [String: String]) {
-        guard headers.count > 0 else {
-            return
-        }
-        if shared.requestHeaders == nil {
-            shared.requestHeaders = [String: String]()
-        }
-        for header in headers {
-            shared.requestHeaders![caseInsensitive: header.key] = header.value
+            for header in commandLineHeaders {
+                shared.requestHeaders[caseInsensitive: header.key] = header.value
+            }
         }
     }
 }

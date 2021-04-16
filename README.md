@@ -80,6 +80,13 @@ Example:
 This is turned off if  `--no-auto-headers` is specified on the command line. In addition, any headers
 added via the command line will override any headers listed here of the same name.
 
+#### ShowResponseHeaders
+
+By default we don't show the response headers unless `--show-response-headers=true` has been specified 
+on the command line. This configuration item can be used to change that and turn them on all the time.
+
+E.g. `"ShowResponseHeaders": true` (Default is `false`)
+
 #### URLPrefix
 
 This can be used to set a prefix that will automatically be prepended to the URL given on the command

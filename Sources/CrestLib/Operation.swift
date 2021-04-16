@@ -48,19 +48,17 @@ public struct Operation {
 
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
         request.headers.add(name: "host", value: "\(request.host):\(request.port)")
-        if Configuration.shared.autoPopulateRequestHeaders ?? true {
+        if Configuration.shared.autoPopulateRequestHeaders {
             request.headers.add(name: "user-agent", value: getUserAgent())
             request.headers.add(name: "accept", value: "*/*")
         }
-        if let headers = Configuration.shared.requestHeaders {
-            for header in headers {
-                request.headers.replaceOrAdd(name: header.key, value: header.value)
-            }
+        for header in Configuration.shared.requestHeaders {
+            request.headers.replaceOrAdd(name: header.key, value: header.value)
         }
     }
 
     private func getUserAgent() -> String {
-        if Configuration.shared.isPrivate ?? false {
+        if Configuration.shared.isPrivate {
             return "Crest"
         }
         let platform = Platform()
@@ -102,7 +100,7 @@ public struct Operation {
                         } else if (try? XMLDocument(data: data)) != nil {
                             contentType = "application/xml"
                         }
-                        if Configuration.shared.autoRecognizeRequestContent ?? true {
+                        if Configuration.shared.autoRecognizeRequestContent {
                             request.headers.add(name: "Content-Type", value: contentType)
                         }
                         request.body = .string(s)
@@ -124,11 +122,28 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
         if head.status != .ok {
             error = OperationError.httpError(head.status)
         } else {
-            print("Headers:")
-            for header in head.headers {
-                print("   \(header.name): \(header.value)")
+            if Configuration.shared.showResponseHeaders {
+                print("Headers:")
+                print("  \(head.version) \(head.status.code) \(head.status)".uppercased())
+                var maxLen = 0
+                for header in head.headers {
+                    let len = header.name.count
+                    if len > maxLen && len <= 25 {
+                        maxLen = len
+                    }
+                }
+                if maxLen > 25 {
+                    maxLen = 25
+                }
+                for header in head.headers {
+                    var name = header.name + ":"
+                    if name.count < maxLen+1 {
+                        name = name.padding(toLength: maxLen+1, withPad: " ", startingAt: 0)
+                    }
+                    print("  \(name) \(header.value)")
+                }
+                print("Content:")
             }
-            print("Content:")
         }
         return task.eventLoop.makeSucceededVoidFuture()
     }

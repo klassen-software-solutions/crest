@@ -22,6 +22,9 @@ struct Crest: ParsableCommand {
     @Option(name: [.customShort("H"), .customLong("header")], help: "Additional request headers of the form name:value")
     var headers = [String]()
 
+    @Option(help: "Show or hide the response headers (true|false)")
+    var showResponseHeaders: Bool?
+
     @Flag(help: "Turn off the auto-population of headers.")
     var noAutoHeaders = false
 
@@ -55,6 +58,9 @@ struct Crest: ParsableCommand {
         }
         if let headers = try requestHeaders() {
             overrides["_RequestHeaders"] = headers
+        }
+        if let showResponseHeaders = self.showResponseHeaders {
+            overrides["ShowResponseHeaders"] = showResponseHeaders
         }
         return overrides
     }
