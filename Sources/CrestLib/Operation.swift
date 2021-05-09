@@ -83,7 +83,8 @@ public struct Operation {
 
     private func addContentToRequest(_ request: inout HTTPClient.Request) throws {
         if let inputStream = InputStream(fileAtPath: "/dev/stdin") {
-            var reader = try InputStreamReader(inputStream)
+            var reader = try InputStreamReader(inputStream,
+                                               withBufferSize: Configuration.shared.inputStreamBufferSize)
             guard !reader.empty else { return }
             if reader.largeStream {
                 wrapper.object = reader

@@ -10,7 +10,7 @@ struct Crest: ParsableCommand {
         abstract: "A utility for communicating with REST-ish services.",
         discussion: """
             For a detailed discussion on how to configure this utility, both globally,
-            and in a local project directory, see the README portion of
+            and in a local project directory, see ConfigurationFiles.md in
             https://github.com/klassen-software-solutions/crest.
             """,
         version: CrestLib.VERSION
@@ -27,6 +27,9 @@ struct Crest: ParsableCommand {
 
     @Option(help: "Turn the pretty printing on or off (true|false)")
     var prettyPrint: Bool?
+
+    @Option(help: "Buffer size for the input stream. (default: 2048)")
+    var inputStreamBufferSize: Int?
 
     @Flag(help: "Turn off the auto-population of headers.")
     var noAutoHeaders = false
@@ -62,6 +65,12 @@ struct Crest: ParsableCommand {
         if let headers = try requestHeaders() {
             overrides["_RequestHeaders"] = headers
         }
+        if let inputStreamBufferSize = self.inputStreamBufferSize {
+            guard inputStreamBufferSize > 0 else {
+                throw ParameterError.nonPositiveParameter("input-stream-buffer-size")
+            }
+            overrides["InputStreamBufferSize"] = inputStreamBufferSize
+        }
         if let showResponseHeaders = self.showResponseHeaders {
             overrides["ShowResponseHeaders"] = showResponseHeaders
         }
@@ -94,6 +103,7 @@ Crest.main()
 private enum ParameterError: Error, LocalizedError {
     case invalidURL(String)
     case invalidHeader(String)
+    case nonPositiveParameter(String)
     case unsupportedScheme(String)
 
     var errorDescription: String? { "\(String(describing: type(of: self))).\(self): \(desc)" }
@@ -104,6 +114,8 @@ private enum ParameterError: Error, LocalizedError {
             return "'\(url)' is not a parsable URL"
         case .invalidHeader(let header):
             return "'\(header)' is not of the form key:value"
+        case .nonPositiveParameter(let parameterName):
+            return "\(parameterName) must be a positive value"
         case .unsupportedScheme(let scheme):
             return "\(scheme)' is not a supported scheme"
         }

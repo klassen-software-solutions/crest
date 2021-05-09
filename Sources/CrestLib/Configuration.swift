@@ -12,6 +12,7 @@ import Foundation
 public struct Configuration {
     var autoPopulateRequestHeaders = true
     var autoRecognizeRequestContent = true
+    var inputStreamBufferSize = 2048
     var isPrivate = false
     var prettyPrint = true
     var requestHeaders = [String: String]()
@@ -32,6 +33,9 @@ public struct Configuration {
         }
         if let value = manager["AutoRecognizeRequestContent"] as? Bool {
             shared.autoRecognizeRequestContent = value
+        }
+        if let value = manager["InputStreamBufferSize"] as? Int {
+            shared.inputStreamBufferSize = value
         }
         if let value = manager["PrettyPrint"] as? Bool {
             shared.prettyPrint = value

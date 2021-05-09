@@ -52,6 +52,15 @@ E.g. `"AutoRecognizeRequestContent": false` (Default is `true`)
 
 This is turned off if `--no-auto-headers` is specified on the command line.
 
+### InputStreamBufferSize
+
+When reading the input stream, large data will be read in chunks. This keeps things efficient since
+the entire data does not need to be in memory at the same time, but it prevents the pretty printing.
+
+E.g. `"InputStreamBufferSize": 8000` (Default is `2048`)
+
+or `--input-stream-buffer-size=8000` on the command line.
+
 ### PrettyPrint
 
 Be default `crest` will pretty print content that it recognizes. This will currently include content
