@@ -119,6 +119,7 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
 
     var error: Error? = nil
     var prettyPrintIsPossible: Bool = false
+    var needNewline = false
 
     func didReceiveHead(task: HTTPClient.Task<Void>, _ head: HTTPResponseHead) -> EventLoopFuture<Void> {
         if head.status != .ok {
@@ -163,6 +164,9 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
             } else {
                 print(string, terminator: "")
             }
+            needNewline = true
+        } else {
+            print("...received binary data: \(buffer.readableBytes) bytes")
         }
         return task.eventLoop.makeSucceededVoidFuture()
     }
@@ -171,7 +175,10 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
         // If pretty print is requested, then we want to add a newline even if pretty
         // printing isn't possible.
         if Configuration.shared.prettyPrint {
-            print()
+            if needNewline {
+                print()
+                needNewline = false
+            }
         }
     }
 
