@@ -7,6 +7,7 @@
 
 import AsyncHTTPClient
 import Foundation
+import KSSFoundation
 import NIO
 import NIOHTTP1
 
@@ -48,23 +49,20 @@ public struct Operation {
 
     private func addHeadersToRequest(_ request: inout HTTPClient.Request) {
         request.headers.add(name: "host", value: "\(request.host):\(request.port)")
-        if Configuration.shared.autoPopulateRequestHeaders ?? true {
+        if Configuration.shared.autoPopulateRequestHeaders {
             request.headers.add(name: "user-agent", value: getUserAgent())
             request.headers.add(name: "accept", value: "*/*")
         }
-        if let headers = Configuration.shared.requestHeaders {
-            for header in headers {
-                request.headers.replaceOrAdd(name: header.key, value: header.value)
-            }
+        for header in Configuration.shared.requestHeaders {
+            request.headers.replaceOrAdd(name: header.key, value: header.value)
         }
     }
 
     private func getUserAgent() -> String {
-        if Configuration.shared.isPrivate ?? false {
+        if Configuration.shared.isPrivate {
             return "Crest"
         }
-        let platform = Platform()
-        return "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))"
+        return "Crest/\(VERSION) (\(Platform.operatingSystem); \(Platform.operatingSystemVersion); \(Platform.hardware))"
     }
 
     // This "ugliness" is needed for the streaming requests since we need the stream
@@ -84,7 +82,8 @@ public struct Operation {
 
     private func addContentToRequest(_ request: inout HTTPClient.Request) throws {
         if let inputStream = InputStream(fileAtPath: "/dev/stdin") {
-            var reader = try InputStreamReader(inputStream)
+            var reader = try InputStreamReader(inputStream,
+                                               withBufferSize: Configuration.shared.inputStreamBufferSize)
             guard !reader.empty else { return }
             if reader.largeStream {
                 wrapper.object = reader
@@ -102,7 +101,7 @@ public struct Operation {
                         } else if (try? XMLDocument(data: data)) != nil {
                             contentType = "application/xml"
                         }
-                        if Configuration.shared.autoRecognizeRequestContent ?? true {
+                        if Configuration.shared.autoRecognizeRequestContent {
                             request.headers.add(name: "Content-Type", value: contentType)
                         }
                         request.body = .string(s)
@@ -119,33 +118,78 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
     typealias Response = Void
 
     var error: Error? = nil
+    var prettyPrintIsPossible: Bool = false
+    var needNewline = false
 
     func didReceiveHead(task: HTTPClient.Task<Void>, _ head: HTTPResponseHead) -> EventLoopFuture<Void> {
         if head.status != .ok {
             error = OperationError.httpError(head.status)
         } else {
-            print("Headers:")
-            for header in head.headers {
-                print("   \(header.name): \(header.value)")
+            if Configuration.shared.prettyPrint {
+                let matches = head.headers["Content-Type"]
+                if matches.count == 1 && canPrettyPrintHeaderType(matches[0]) {
+                    prettyPrintIsPossible = true
+                }
             }
-            print("Content:")
+            if Configuration.shared.showResponseHeaders {
+                print("Headers:")
+                print("  \(head.version) \(head.status.code) \(head.status)".uppercased())
+                var maxLen = 0
+                for header in head.headers {
+                    let len = header.name.count
+                    if len > maxLen && len <= 25 {
+                        maxLen = len
+                    }
+                }
+                if maxLen > 25 {
+                    maxLen = 25
+                }
+                for header in head.headers {
+                    var name = header.name + ":"
+                    if name.count < maxLen+1 {
+                        name = name.padding(toLength: maxLen+1, withPad: " ", startingAt: 0)
+                    }
+                    print("  \(name) \(header.value)")
+                }
+                print("Content:")
+            }
         }
         return task.eventLoop.makeSucceededVoidFuture()
     }
 
     func didReceiveBodyPart(task: HTTPClient.Task<Void>, _ buffer: ByteBuffer) -> EventLoopFuture<Void> {
         if let string = buffer.getString(at: buffer.readerIndex, length: buffer.readableBytes, encoding: .utf8) {
-            print(string)
+            if prettyPrintIsPossible {
+                print(string.prettyPrint(), terminator: "")
+            } else {
+                print(string, terminator: "")
+            }
+            needNewline = true
+        } else {
+            print("...received binary data: \(buffer.readableBytes) bytes")
         }
         return task.eventLoop.makeSucceededVoidFuture()
     }
 
     func didFinishRequest(task: HTTPClient.Task<Void>) throws -> Void {
-        // TODO: this is likely where the prettyprinter needs to happen
+        // If pretty print is requested, then we want to add a newline even if pretty
+        // printing isn't possible.
+        if Configuration.shared.prettyPrint {
+            if needNewline {
+                print()
+                needNewline = false
+            }
+        }
     }
 
     func didReceiveError(task: HTTPClient.Task<Void>, _ error: Error) {
         self.error = error
+    }
+
+    func canPrettyPrintHeaderType(_ contentType: String) -> Bool {
+        return contentType.starts(with: "application/xml")
+            || contentType.starts(with: "text/xml")
+            || contentType.starts(with: "application/json")
     }
 }
 
