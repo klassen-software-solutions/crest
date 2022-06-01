@@ -62,8 +62,7 @@ public struct Operation {
         if Configuration.shared.isPrivate {
             return "Crest"
         }
-        let platform = Platform()
-        return "Crest/\(VERSION) (\(platform.operatingSystem); \(platform.operatingSystemVersion); \(platform.hardware))"
+        return "Crest/\(VERSION) (\(Platform.operatingSystem); \(Platform.operatingSystemVersion); \(Platform.hardware))"
     }
 
     // This "ugliness" is needed for the streaming requests since we need the stream

@@ -13,7 +13,7 @@ let package = Package(
         .library(name: "CrestLib", targets: ["CrestLib"])
     ],
     dependencies: [
-        .package(url: "https://github.com/klassen-software-solutions/KSSCore.git", from: "5.1.0"),
+        .package(url: "https://github.com/klassen-software-solutions/KSSCore.git", from: "5.1.1"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.1.2"),
         .package(url: "https://github.com/swift-server/async-http-client", from: "1.10.0"),
         .package(url: "https://github.com/Kitura/Configuration.git", from: "3.0.200")
