@@ -9,7 +9,12 @@ import AsyncHTTPClient
 import Foundation
 import KSSFoundation
 import NIO
+import NIOFoundationCompat
 import NIOHTTP1
+
+#if canImport(FoundationXML)
+    import FoundationXML
+#endif
 
 
 public struct Operation {
