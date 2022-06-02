@@ -127,6 +127,7 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
     var needNewline = false
 
     func didReceiveHead(task: HTTPClient.Task<Void>, _ head: HTTPResponseHead) -> EventLoopFuture<Void> {
+        outputResponseHeaders(head)
         if head.status != .ok {
             error = OperationError.httpError(head.status)
         } else {
@@ -135,28 +136,6 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
                 if matches.count == 1 && canPrettyPrintHeaderType(matches[0]) {
                     prettyPrintIsPossible = true
                 }
-            }
-            if Configuration.shared.showResponseHeaders {
-                print("Headers:")
-                print("  \(head.version) \(head.status.code) \(head.status)".uppercased())
-                var maxLen = 0
-                for header in head.headers {
-                    let len = header.name.count
-                    if len > maxLen && len <= 25 {
-                        maxLen = len
-                    }
-                }
-                if maxLen > 25 {
-                    maxLen = 25
-                }
-                for header in head.headers {
-                    var name = header.name + ":"
-                    if name.count < maxLen+1 {
-                        name = name.padding(toLength: maxLen+1, withPad: " ", startingAt: 0)
-                    }
-                    print("  \(name) \(header.value)")
-                }
-                print("Content:")
             }
         }
         return task.eventLoop.makeSucceededVoidFuture()
@@ -195,6 +174,31 @@ final class ResponseDelegate: HTTPClientResponseDelegate {
         return contentType.starts(with: "application/xml")
             || contentType.starts(with: "text/xml")
             || contentType.starts(with: "application/json")
+    }
+
+    func outputResponseHeaders(_ head: HTTPResponseHead) {
+        if Configuration.shared.showResponseHeaders {
+            print("Headers:")
+            print("  \(head.version) \(head.status.code) \(head.status)".uppercased())
+            var maxLen = 0
+            for header in head.headers {
+                let len = header.name.count
+                if len > maxLen && len <= 25 {
+                    maxLen = len
+                }
+            }
+            if maxLen > 25 {
+                maxLen = 25
+            }
+            for header in head.headers {
+                var name = header.name + ":"
+                if name.count < maxLen+1 {
+                    name = name.padding(toLength: maxLen+1, withPad: " ", startingAt: 0)
+                }
+                print("  \(name) \(header.value)")
+            }
+            print("Content:")
+        }
     }
 }
 
